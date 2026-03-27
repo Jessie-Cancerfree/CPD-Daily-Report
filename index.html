@@ -1,0 +1,849 @@
+<!DOCTYPE html>
+<html lang="zh-TW">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>每日行程報告系統</title>
+<script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:-apple-system,BlinkMacSystemFont,'Segoe UI',sans-serif;background:#f5f6fa;color:#222;font-size:15px}
+.app{max-width:600px;margin:0 auto;padding:0 0 80px}
+header{background:#fff;border-bottom:1px solid #e8e8e8;padding:14px 16px;position:sticky;top:0;z-index:100;display:flex;align-items:center;justify-content:space-between}
+.logo{font-size:16px;font-weight:600;color:#333}
+.header-right{display:flex;align-items:center;gap:8px}
+.user-badge{background:#eef2ff;color:#4f46e5;padding:4px 10px;border-radius:20px;font-size:13px;font-weight:500}
+.section{background:#fff;margin:12px 12px 0;border-radius:12px;overflow:hidden;border:1px solid #ebebeb}
+.section-header{padding:12px 16px 10px;border-bottom:1px solid #f0f0f0;display:flex;align-items:center;gap:8px}
+.section-title{font-size:14px;font-weight:600;color:#444;flex:1}
+.badge{font-size:11px;padding:2px 8px;border-radius:10px;font-weight:500}
+.badge-blue{background:#e8f0fe;color:#1a56db}
+.badge-green{background:#e6f4ea;color:#1e7e34}
+.badge-red{background:#fde8e8;color:#b91c1c}
+.badge-yellow{background:#fef9c3;color:#854d0e}
+.badge-gray{background:#f3f4f6;color:#555}
+.badge-purple{background:#ede9fe;color:#5b21b6}
+.badge-orange{background:#fff7ed;color:#c2410c}
+.section-body{padding:12px 16px}
+select,input[type=text],input[type=date],input[type=number],input[type=password]{width:100%;border:1px solid #ddd;border-radius:8px;padding:9px 12px;font-size:14px;color:#333;background:#fff;outline:none;font-family:inherit}
+select:focus,input:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,0.1)}
+textarea{width:100%;border:1px solid #ddd;border-radius:8px;padding:9px 12px;font-size:14px;color:#333;background:#fff;outline:none;font-family:inherit;resize:vertical;line-height:1.5}
+textarea:focus{border-color:#6366f1;box-shadow:0 0 0 3px rgba(99,102,241,0.1)}
+label{font-size:13px;color:#666;display:block;margin-bottom:5px;margin-top:12px}
+label:first-child{margin-top:0}
+.btn{display:inline-flex;align-items:center;justify-content:center;gap:6px;padding:9px 16px;border-radius:8px;font-size:14px;font-weight:500;cursor:pointer;border:none;transition:all 0.15s}
+.btn-primary{background:#6366f1;color:#fff}.btn-primary:hover{background:#4f46e5}
+.btn-success{background:#16a34a;color:#fff}.btn-success:hover{background:#15803d}
+.btn-danger{background:#dc2626;color:#fff}.btn-danger:hover{background:#b91c1c}
+.btn-outline{background:#fff;color:#555;border:1px solid #ddd}.btn-outline:hover{background:#f9f9f9}
+.btn-teal{background:#0d9488;color:#fff}.btn-teal:hover{background:#0f766e}
+.btn-sm{padding:6px 12px;font-size:13px}
+.btn-block{width:100%;margin-top:10px}
+.tab-bar{display:flex;background:#fff;border-bottom:1px solid #e8e8e8;overflow-x:auto}
+.tab{flex:1;min-width:60px;padding:11px 4px;font-size:13px;font-weight:500;color:#888;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;text-align:center}
+.tab.active{color:#6366f1;border-bottom-color:#6366f1}
+.tab-content{display:none}.tab-content.active{display:block}
+.empty{text-align:center;color:#bbb;font-size:14px;padding:24px 0}
+.alert-banner{background:#fef3c7;border:1px solid #fcd34d;border-radius:8px;padding:10px 12px;margin-bottom:8px;font-size:13px;color:#78350f}
+.alert-banner.urgent{background:#fee2e2;border-color:#fca5a5;color:#7f1d1d}
+.divider{height:1px;background:#f0f0f0;margin:10px 0}
+.stat-row{display:grid;grid-template-columns:repeat(4,1fr);gap:8px;margin-bottom:12px}
+.stat{background:#f8f9fc;border-radius:8px;padding:10px;text-align:center}
+.stat-num{font-size:20px;font-weight:600;color:#4f46e5}
+.stat-label{font-size:11px;color:#888;margin-top:2px}
+.name-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px;margin-top:12px}
+.name-btn{padding:14px 10px;border:1.5px solid #ddd;border-radius:12px;font-size:14px;font-weight:500;cursor:pointer;background:#fff;color:#444;transition:all 0.15s;text-align:center}
+.name-btn:hover{border-color:#6366f1;color:#6366f1;background:#f5f3ff}
+.welcome{padding:28px 16px}
+.welcome h2{font-size:18px;font-weight:600;color:#333;margin-bottom:6px}
+.welcome p{font-size:14px;color:#888;margin-bottom:16px}
+.toast{position:fixed;top:20px;left:50%;transform:translateX(-50%);background:#333;color:#fff;padding:10px 18px;border-radius:8px;font-size:14px;z-index:500;opacity:0;transition:opacity 0.3s;pointer-events:none;white-space:nowrap}
+.toast.show{opacity:1}
+.sch-item{display:flex;align-items:center;gap:8px;padding:8px 0;border-bottom:1px solid #f5f5f5}
+.sch-item:last-child{border-bottom:none}
+.sch-label{font-size:14px;color:#333;min-width:90px;font-weight:500}
+.sch-note{flex:1;border:1px solid #e0e0e0;border-radius:7px;padding:6px 10px;font-size:13px;color:#555;background:#fafafa;outline:none;font-family:inherit}
+.sch-note:focus{border-color:#6366f1;background:#fff}
+.sch-del{background:none;border:none;cursor:pointer;color:#ccc;font-size:18px;padding:2px 6px;line-height:1;flex-shrink:0}
+.sch-del:hover{color:#dc2626}
+.comp-item{display:flex;align-items:flex-start;gap:10px;padding:9px 0;border-bottom:1px solid #f5f5f5}
+.comp-item:last-child{border-bottom:none}
+.chk{width:20px;height:20px;border-radius:5px;border:2px solid #ccc;cursor:pointer;flex-shrink:0;display:flex;align-items:center;justify-content:center;font-size:12px;transition:all 0.15s}
+.chk.done{background:#16a34a;border-color:#16a34a;color:#fff}
+.comp-label{font-size:14px;color:#333;line-height:1.4}
+.comp-label.done{text-decoration:line-through;color:#bbb}
+.comp-note{width:100%;margin-top:5px;border:1px solid #e0e0e0;border-radius:7px;padding:5px 10px;font-size:13px;color:#555;background:#fafafa;outline:none;font-family:inherit}
+.add-item-row{display:flex;gap:8px;margin-top:10px;align-items:center}
+.preset-select{flex:1;border:1px dashed #c7d2fe;border-radius:8px;padding:8px 10px;font-size:14px;color:#6366f1;background:#f5f3ff;cursor:pointer;outline:none}
+.task-card{border:1px solid #ebebeb;border-radius:12px;margin-bottom:10px;overflow:hidden}
+.task-card:last-child{margin-bottom:0}
+.task-card-header{padding:12px 14px;display:flex;align-items:flex-start;gap:10px;cursor:pointer}
+.task-card-header:hover{background:#fafafa}
+.task-title-wrap{flex:1}
+.task-title{font-size:14px;font-weight:600;color:#333}
+.task-title.done{text-decoration:line-through;color:#bbb}
+.task-title.pending{color:#c2410c}
+.task-meta{display:flex;gap:6px;flex-wrap:wrap;margin-top:5px;align-items:center}
+.progress-bar{height:5px;background:#e8e8e8;border-radius:3px;margin-top:6px;overflow:hidden}
+.progress-fill{height:100%;border-radius:3px;background:#6366f1}
+.progress-fill.full{background:#16a34a}
+.task-subtasks{padding:0 14px 12px;border-top:1px solid #f0f0f0;background:#fafafa}
+.subtask-row{display:flex;align-items:center;gap:8px;padding:7px 0;border-bottom:1px solid #f0f0f0}
+.subtask-row:last-child{border-bottom:none}
+.subtask-label{font-size:13px;color:#444;flex:1}
+.subtask-label.done{text-decoration:line-through;color:#bbb}
+.priority-high{border-left:3px solid #dc2626}
+.priority-med{border-left:3px solid #f59e0b}
+.priority-low{border-left:3px solid #22c55e}
+.priority-pending{border-left:3px solid #ea580c}
+.kpi-item{padding:10px 0;border-bottom:1px solid #f5f5f5}
+.kpi-item:last-child{border-bottom:none}
+.kpi-cat{display:inline-block;font-size:11px;padding:1px 7px;border-radius:8px;background:#ede9fe;color:#5b21b6;margin-right:6px}
+.kpi-bar{height:6px;background:#e8e8e8;border-radius:3px;margin-top:5px;overflow:hidden}
+.kpi-fill{height:100%;border-radius:3px;background:#6366f1}
+.kpi-fill.good{background:#16a34a}.kpi-fill.warn{background:#f59e0b}
+.input-row{display:grid;grid-template-columns:1fr 1fr;gap:8px}
+.mgr-tabs{display:flex;background:#fff;border-bottom:1px solid #e8e8e8;overflow-x:auto;position:sticky;top:57px;z-index:90}
+.mgr-tab{flex:1;min-width:65px;padding:10px 4px;font-size:12px;font-weight:500;color:#888;border:none;background:none;cursor:pointer;border-bottom:2px solid transparent;white-space:nowrap;text-align:center}
+.mgr-tab.active{color:#6366f1;border-bottom-color:#6366f1}
+.mgr-tab-content{display:none}.mgr-tab-content.active{display:block}
+.member-tabs{display:flex;gap:6px;flex-wrap:wrap;margin-bottom:12px}
+.mtab{padding:5px 12px;border-radius:20px;font-size:13px;cursor:pointer;border:1px solid #ddd;background:#fff;color:#555}
+.mtab.active{background:#6366f1;color:#fff;border-color:#6366f1}
+.edit-row{display:flex;align-items:center;gap:8px;padding:6px 0;border-bottom:1px solid #f5f5f5}
+.edit-row:last-child{border-bottom:none}
+.edit-row input{flex:1;padding:6px 10px;font-size:14px;border:1px solid #e0e0e0;border-radius:7px;background:#fafafa}
+.dot{width:6px;height:6px;border-radius:50%;background:#6366f1;flex-shrink:0}
+.export-row{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:10px}
+.member-check-grid{display:flex;flex-wrap:wrap;gap:10px;margin-top:6px}
+.status-seg{display:flex;gap:6px;margin-bottom:12px}
+.seg-btn{flex:1;padding:7px 4px;border-radius:8px;font-size:13px;font-weight:500;border:1px solid #ddd;background:#fff;color:#888;cursor:pointer;text-align:center}
+.seg-btn.active{background:#6366f1;color:#fff;border-color:#6366f1}
+.seg-btn.s-done.active{background:#16a34a;border-color:#16a34a}
+.seg-btn.s-pending.active{background:#ea580c;border-color:#ea580c}
+.chip-wrap{display:flex;flex-wrap:wrap;gap:6px;margin-bottom:10px}
+.date-bar{background:#fff;border-bottom:1px solid #f0f0f0;padding:10px 16px;display:flex;align-items:center;gap:10px}
+.backfill-badge{font-size:12px;color:#c2410c;background:#fff7ed;border:1px solid #fed7aa;border-radius:6px;padding:2px 8px;white-space:nowrap;flex-shrink:0}
+</style>
+</head>
+<body>
+<div class="app" id="app"></div>
+<div id="toast" class="toast"></div>
+<script>
+var MEMBERS=['Juno','Luna','Lucia','Ian','Ana','Heather'];
+var MEMBER_ROLES={Juno:'業務',Luna:'業務助理',Lucia:'學術專員兼B2B',Ian:'業務兼B2B',Ana:'個管師兼行銷',Heather:'臨床試驗兼個管'};
+var DEFAULT_SCH_ITEMS={Juno:['醫師拜訪','客戶電話回訪','新客戶開發','報價單整理','CRM資料更新','訂單追蹤','業績報表','業務會議'],Luna:['檢測流程確認','報告寄送','訂單處理','客戶詢價回覆','物料庫存盤點','會議記錄','廠商聯絡'],Lucia:['醫師/科室拜訪','學術文獻提供','演講/研討會安排','拜訪紀錄更新','B2B里程碑確認','客戶滿意度追蹤'],Ian:['客戶拜訪（業務）','B2B里程碑確認','藥廠關係維護','期中/結案報告','跨部門協作'],Ana:['活動籌備執行','活動出席率確認','行銷素材提供','官網平台推進','兒癌個管行政','病人案例整理'],Heather:['IRB送件確認','收案進度更新','EDC填寫確認','試驗文件建檔','病友活動協調','個管個案追蹤']};
+var DEFAULT_FIXED={Juno:['拜訪客戶/回訪電話','更新客戶資料與CRM','整理報價單與合約','追蹤訂單與出貨進度'],Luna:['處理檢測流程相關作業','確認報告寄送完整性','回覆客戶詢價與報價','管理樣品與宣傳物料'],Lucia:['拜訪醫師/醫院科室','提供學術資訊與文獻','確認B2B專案里程碑','維護客戶關係'],Ian:['業務拜訪（50%工時）','藥廠關係維護','撰寫期中/結案報告','跨部門協作'],Ana:['個管活動籌備與執行','追蹤活動出席率','提供行銷部素材','推進官網購物平台'],Heather:['確認IRB申請時程','更新收案進度','確認EDC填寫完整','維護試驗文件建檔']};
+var KPI_DEFS_DEFAULT={Juno:[{id:'j1',cat:'量化',name:'每日拜訪數',unit:'次',target:50,period:'monthly'},{id:'j2',cat:'量化',name:'新客戶開發數',unit:'家',target:5,period:'monthly'}],Luna:[],Lucia:[],Ian:[{id:'i1',cat:'業務',name:'每日拜訪數',unit:'次',target:20,period:'monthly'}],Ana:[{id:'a1',cat:'個管',name:'提供行銷部素材病人數',unit:'人',target:5,period:'monthly'},{id:'a2',cat:'個管',name:'提供Lucia素材病人數',unit:'人',target:8,period:'monthly'}],Heather:[{id:'h1',cat:'個管',name:'提供行銷部素材病人數',unit:'人',target:3,period:'monthly'},{id:'h2',cat:'個管',name:'提供Lucia素材病人數',unit:'人',target:4,period:'monthly'}]};
+
+var S={cur:null,isMgr:false,d:JSON.parse(localStorage.getItem('drs8')||'{}')};
+var SEL_DATE='';
+var CUR_TAB=0;
+// per-user per-date cache
+var SCH_CACHE={};
+var COMP_CACHE={};
+
+function save(){localStorage.setItem('drs8',JSON.stringify(S.d))}
+function today(){return new Date().toISOString().split('T')[0]}
+function daysUntil(d){return Math.ceil((new Date(d)-new Date(today()))/86400000)}
+function ud(u){
+  if(!S.d[u])S.d[u]={schedules:{},completions:{},kpi:{},taskStatus:{},schItems:null,fixedTasks:null};
+  if(!S.d[u].schItems)S.d[u].schItems=DEFAULT_SCH_ITEMS[u].slice();
+  if(!S.d[u].fixedTasks)S.d[u].fixedTasks=DEFAULT_FIXED[u].map(function(f){return{label:f,count:''}});
+  S.d[u].fixedTasks=S.d[u].fixedTasks.map(function(f){return typeof f==='string'?{label:f,count:''}:f});
+  return S.d[u];
+}
+function tasks(){if(!S.d._t)S.d._t=[];return S.d._t}
+function kpiDefs(u){return(S.d._kpi&&S.d._kpi[u])||KPI_DEFS_DEFAULT[u]||[]}
+function saveKpiDefs(u,defs){if(!S.d._kpi)S.d._kpi={};S.d._kpi[u]=defs;save()}
+function mTarget(k){return k.period==='yearly'?Math.round(k.target/12):k.target}
+function getTaskStatus(t){if(t.status==='pending')return'pending';if(!t.subtasks||!t.subtasks.length)return t.status||'active';for(var i=0;i<t.subtasks.length;i++)if(!t.subtasks[i].done)return'active';return'done'}
+function toast(m){var t=document.getElementById('toast');t.textContent=m;t.classList.add('show');setTimeout(function(){t.classList.remove('show')},2500)}
+function esc(s){return String(s||'').replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;')}
+function $id(id){return document.getElementById(id)}
+
+function getSchRows(u,date){
+  if(!SCH_CACHE[u])SCH_CACHE[u]={};
+  if(!SCH_CACHE[u][date]){
+    var sv=ud(u).schedules[date];
+    SCH_CACHE[u][date]=sv?sv.map(function(r){return{label:r.label,note:r.note||''}}):[]; 
+  }
+  return SCH_CACHE[u][date];
+}
+function getCompRows(u,date){
+  if(!COMP_CACHE[u])COMP_CACHE[u]={};
+  if(!COMP_CACHE[u][date]){
+    var d=ud(u);
+    if(d.completions[date]&&d.completions[date].length){
+      COMP_CACHE[u][date]=d.completions[date].map(function(r){return{label:r.label,note:r.note||'',done:!!r.done}});
+    } else if(d.schedules[date]&&d.schedules[date].length){
+      COMP_CACHE[u][date]=d.schedules[date].map(function(r){return{label:r.label,note:r.note||'',done:false}});
+    } else {
+      COMP_CACHE[u][date]=[];
+    }
+  }
+  return COMP_CACHE[u][date];
+}
+function clearDateCache(u,date){
+  if(SCH_CACHE[u])delete SCH_CACHE[u][date];
+  if(COMP_CACHE[u])delete COMP_CACHE[u][date];
+}
+
+function render(){
+  var app=$id('app');
+  if(!S.cur&&!S.isMgr){renderWelcome(app);return}
+  if(S.isMgr){renderMgr(app);return}
+  renderUser(app);
+}
+
+// ── WELCOME ──────────────────────────────────────────────
+function renderWelcome(app){
+  app.innerHTML=''
+    +'<header><div class="logo">每日行程報告</div></header>'
+    +'<div class="welcome">'
+    +'<h2>請選擇您的姓名</h2><p>選擇後進入個人行程與KPI系統</p>'
+    +'<div class="name-grid">'+MEMBERS.map(function(m){return'<button class="name-btn" onclick="selUser(\''+m+'\')">'+m+'<br><span style="font-size:12px;color:#999;font-weight:400">'+MEMBER_ROLES[m]+'</span></button>'}).join('')+'</div>'
+    +'</div>'
+    +'<div style="margin:8px 16px 0"><div style="border:1px solid #ebebeb;border-radius:12px;padding:14px 16px;background:#fff">'
+    +'<div style="font-size:13px;color:#aaa;margin-bottom:8px">經理入口</div>'
+    +'<div style="display:flex;gap:8px"><input type="password" id="mgr-pw" placeholder="輸入密碼" style="flex:1" onkeydown="if(event.key===\'Enter\')mgrLogin()"><button class="btn btn-primary btn-sm" onclick="mgrLogin()">進入</button></div>'
+    +'<div id="mgr-err" style="font-size:12px;color:#dc2626;margin-top:6px;display:none">密碼錯誤，請再試一次</div>'
+    +'</div></div>'
+    +'<div style="text-align:center;margin-top:20px"><button onclick="clearAll()" style="background:none;border:none;font-size:12px;color:#ddd;cursor:pointer">重置所有資料</button></div>';
+}
+
+function mgrLogin(){
+  var pw=$id('mgr-pw');
+  var err=$id('mgr-err');
+  if(!pw)return;
+  if(pw.value==='1234'){
+    S.isMgr=true;
+    pw.value='';
+    render();
+  } else {
+    if(err)err.style.display='block';
+    pw.value='';
+    pw.focus();
+  }
+}
+
+function selUser(name){
+  S.cur=name;
+  SEL_DATE=today();
+  clearDateCache(name,SEL_DATE);
+  render();
+}
+function logout(){S.cur=null;render()}
+function clearAll(){if(confirm('確定重置所有資料？')){localStorage.removeItem('drs8');location.reload()}}
+
+// ── USER PAGE ─────────────────────────────────────────────
+function renderUser(app){
+  var u=S.cur,td=today(),d=ud(u);
+  if(!SEL_DATE)SEL_DATE=td;
+  var myTasks=tasks().filter(function(t){return t.assignees&&t.assignees.indexOf(u)>=0});
+  var urgent=myTasks.filter(function(t){return getTaskStatus(t)==='active'&&t.deadline&&daysUntil(t.deadline)<=1});
+  var warn=myTasks.filter(function(t){return getTaskStatus(t)==='active'&&t.deadline&&daysUntil(t.deadline)>1&&daysUntil(t.deadline)<=3});
+
+  app.innerHTML=''
+    +'<header><div class="logo">每日行程報告</div>'
+    +'<div class="header-right"><span class="user-badge">'+u+'</span><button class="btn btn-outline btn-sm" onclick="logout()">切換</button></div></header>'
+    +'<div class="date-bar">'
+    +'<span style="font-size:13px;color:#888;white-space:nowrap">填報日期</span>'
+    +'<input type="date" id="date-picker" value="'+SEL_DATE+'" max="'+td+'" style="flex:1;padding:7px 10px;font-size:14px;border:1px solid #ddd;border-radius:8px" onchange="onDateChange(this.value)">'
+    +(SEL_DATE!==td?'<span class="backfill-badge">補填模式</span>':'')
+    +'</div>'
+    +(SEL_DATE===td&&urgent.length?'<div style="margin:10px 12px 0"><div class="alert-banner urgent">⚠ '+urgent.map(function(t){return esc(t.title)}).join('、')+' 即將到期！</div></div>':'')
+    +(SEL_DATE===td&&warn.length?'<div style="margin:8px 12px 0"><div class="alert-banner">⏰ '+warn.map(function(t){return esc(t.title)}).join('、')+' 3天內到期</div></div>':'')
+    +'<div class="tab-bar">'
+    +'<button class="tab active" id="tab-btn-0" onclick="swTab(0)">行程登錄</button>'
+    +'<button class="tab" id="tab-btn-1" onclick="swTab(1)">完成回報</button>'
+    +'<button class="tab" id="tab-btn-2" onclick="swTab(2)">KPI</button>'
+    +'<button class="tab" id="tab-btn-3" onclick="swTab(3)">待辦</button>'
+    +'<button class="tab" id="tab-btn-4" onclick="swTab(4)">紀錄</button>'
+    +'</div>'
+    +'<div id="tab-panel"></div>';
+
+  CUR_TAB=0;
+  renderTab(0);
+}
+
+function onDateChange(val){
+  SEL_DATE=val;
+  clearDateCache(S.cur,val);
+  var bar=document.querySelector('.date-bar');
+  if(bar){
+    var old=bar.querySelector('.backfill-badge');
+    if(old)old.parentNode.removeChild(old);
+    if(val!==today()){
+      var b=document.createElement('span');
+      b.className='backfill-badge';
+      b.textContent='補填模式';
+      bar.appendChild(b);
+    }
+  }
+  renderTab(CUR_TAB);
+}
+
+function swTab(i){
+  CUR_TAB=i;
+  for(var j=0;j<5;j++){var b=$id('tab-btn-'+j);if(b)b.className='tab'+(i===j?' active':'')}
+  renderTab(i);
+}
+
+function renderTab(i){
+  var panel=$id('tab-panel');
+  if(!panel)return;
+  var u=S.cur,d=ud(u);
+  var myTasks=tasks().filter(function(t){return t.assignees&&t.assignees.indexOf(u)>=0});
+  if(i===0)panel.innerHTML=renderMorningSection(u,SEL_DATE);
+  else if(i===1)panel.innerHTML=renderEveningSection(u,SEL_DATE);
+  else if(i===2)panel.innerHTML=renderKPISection(u,SEL_DATE,d);
+  else if(i===3)panel.innerHTML=renderTodos(u,myTasks,d);
+  else if(i===4)panel.innerHTML=renderHistory(u,d);
+}
+
+// ── MORNING ──────────────────────────────────────────────
+var chipStyle={sch:'border:1px solid #c7d2fe;background:#f5f3ff;color:#4f46e5',fixed:'border:1px solid #d1fae5;background:#f0fdf4;color:#15803d',task:'border:1px solid #fed7aa;background:#fff7ed;color:#c2410c'};
+
+function buildChips(u){
+  var si=ud(u).schItems||[];
+  var fi=(ud(u).fixedTasks||[]).map(function(f){return typeof f==='string'?f:f.label});
+  var ti=tasks().filter(function(t){return t.assignees&&t.assignees.indexOf(u)>=0&&getTaskStatus(t)==='active'}).map(function(t){return t.title});
+  var fs={},ts={};
+  fi.forEach(function(x){fs[x]=1});
+  ti.forEach(function(x){ts[x]=1});
+  var seen={},chips=[];
+  si.forEach(function(x){if(!seen[x]){seen[x]=1;chips.push({label:x,src:ts[x]?'task':fs[x]?'fixed':'sch'})}});
+  fi.forEach(function(x){if(!seen[x]){seen[x]=1;chips.push({label:x,src:'fixed'})}});
+  ti.forEach(function(x){if(!seen[x]){seen[x]=1;chips.push({label:x,src:'task'})}});
+  return chips;
+}
+
+function renderMorningSection(u,date){
+  var rows=getSchRows(u,date);
+  var chips=buildChips(u);
+  var chipsHTML=chips.map(function(c){return'<div style="padding:5px 12px;border-radius:20px;font-size:13px;cursor:pointer;'+chipStyle[c.src]+'" onclick="qAddSch(\''+esc(c.label)+'\')">'+esc(c.label)+'</div>'}).join('');
+  var rowsHTML=rows.length?rows.map(function(r,i){return schRowHTML(i,r)}).join(''):'<div class="empty" style="padding:12px 0">點選上方項目或手動新增</div>';
+  return'<div class="section" style="margin-top:12px">'
+    +'<div class="section-header"><span class="section-title">行程登錄</span><span class="badge badge-blue">'+date+'</span></div>'
+    +'<div class="section-body">'
+    +'<div style="font-size:12px;margin-bottom:8px;color:#888"><span style="color:#4f46e5">■ 紫</span> 常用　<span style="color:#15803d">■ 綠</span> 工作事項　<span style="color:#c2410c">■ 橘</span> 指派任務</div>'
+    +'<div class="chip-wrap" id="chip-area">'+(chipsHTML||'<span style="font-size:13px;color:#bbb">尚無常用項目</span>')+'</div>'
+    +'<div id="sch-rows">'+rowsHTML+'</div>'
+    +'<div class="add-item-row"><input type="text" id="sch-manual" placeholder="手動輸入項目..." style="flex:1"><button class="btn btn-outline btn-sm" onclick="manualAddSch()">新增</button></div>'
+    +'<button class="btn btn-success btn-block" onclick="saveMorning()">儲存行程</button>'
+    +'</div></div>'
+    +'<div class="section" style="margin-top:12px">'
+    +'<div class="section-header"><span class="section-title">常用行程項目</span><span class="badge badge-gray">快速選取</span></div>'
+    +'<div class="section-body" id="ci-panel">'+renderCIPanel(u)+'</div>'
+    +'</div>';
+}
+function schRowHTML(i,r){
+  return'<div class="sch-item"><span class="sch-label">'+esc(r.label)+'</span><input class="sch-note" type="text" placeholder="說明/對象/數量" value="'+esc(r.note||'')+'" oninput="updSchNote('+i+',this.value)"><button class="sch-del" onclick="delSchItem('+i+')">×</button></div>';
+}
+function renderCIPanel(u){
+  var items=ud(u).schItems||[];
+  return items.map(function(it,i){return'<div class="edit-row"><input type="text" value="'+esc(it)+'" onchange="editCI('+i+',this.value)"><button class="sch-del" onclick="delCI('+i+')">×</button></div>'}).join('')
+    +'<div class="add-item-row" style="margin-top:8px"><input type="text" id="new-ci" placeholder="新增常用行程項目" style="flex:1"><button class="btn btn-outline btn-sm" onclick="addCI()">新增</button></div>';
+}
+function syncSchNotes(){
+  var w=$id('sch-rows');if(!w)return;
+  var rows=getSchRows(S.cur,SEL_DATE);
+  var ns=w.querySelectorAll('.sch-note');
+  for(var i=0;i<ns.length;i++)if(rows[i])rows[i].note=ns[i].value;
+}
+function qAddSch(label){
+  var rows=getSchRows(S.cur,SEL_DATE);
+  for(var i=0;i<rows.length;i++)if(rows[i].label===label){toast('已在清單中');return}
+  syncSchNotes();rows.push({label:label,note:''});refreshSchRows();
+}
+function manualAddSch(){
+  var inp=$id('sch-manual');var v=inp&&inp.value.trim();if(!v)return;
+  syncSchNotes();getSchRows(S.cur,SEL_DATE).push({label:v,note:''});inp.value='';refreshSchRows();
+}
+function delSchItem(i){syncSchNotes();getSchRows(S.cur,SEL_DATE).splice(i,1);refreshSchRows()}
+function updSchNote(i,v){var r=getSchRows(S.cur,SEL_DATE);if(r[i])r[i].note=v}
+function refreshSchRows(){
+  var w=$id('sch-rows');if(!w)return;
+  var rows=getSchRows(S.cur,SEL_DATE);
+  w.innerHTML=rows.length?rows.map(function(r,i){return schRowHTML(i,r)}).join(''):'<div class="empty" style="padding:12px 0">點選上方項目或手動新增</div>';
+}
+function refreshChips(){
+  var w=$id('chip-area');if(!w)return;
+  var chips=buildChips(S.cur);
+  w.innerHTML=chips.map(function(c){return'<div style="padding:5px 12px;border-radius:20px;font-size:13px;cursor:pointer;'+chipStyle[c.src]+'" onclick="qAddSch(\''+esc(c.label)+'\')">'+esc(c.label)+'</div>'}).join('')||'<span style="font-size:13px;color:#bbb">尚無常用項目</span>';
+}
+function addCI(){var inp=$id('new-ci');var v=inp&&inp.value.trim();if(!v)return;ud(S.cur).schItems.push(v);save();inp.value='';$id('ci-panel').innerHTML=renderCIPanel(S.cur);refreshChips();toast('已新增')}
+function editCI(i,v){ud(S.cur).schItems[i]=v;save();refreshChips()}
+function delCI(i){ud(S.cur).schItems.splice(i,1);save();$id('ci-panel').innerHTML=renderCIPanel(S.cur);refreshChips()}
+function saveMorning(){
+  syncSchNotes();
+  var u=S.cur,date=SEL_DATE,rows=getSchRows(u,date);
+  if(!rows.length){toast('請先新增行程項目');return}
+  ud(u).schedules[date]=rows.map(function(r){return{label:r.label,note:r.note}});
+  if(COMP_CACHE[u])delete COMP_CACHE[u][date];
+  save();toast('行程已儲存 ✓');
+}
+
+// ── EVENING ──────────────────────────────────────────────
+function renderEveningSection(u,date){
+  var rows=getCompRows(u,date);
+  var si=ud(u).schItems||[];
+  var fi=(ud(u).fixedTasks||[]).map(function(f){return typeof f==='string'?f:f.label});
+  var seen={},allItems=[];
+  si.concat(fi).forEach(function(x){if(!seen[x]){seen[x]=1;allItems.push(x)}});
+  var hasMorning=!!(ud(u).schedules[date]&&ud(u).schedules[date].length);
+  return'<div class="section" style="margin-top:12px">'
+    +'<div class="section-header"><span class="section-title">完成事項回報</span><span class="badge badge-green">'+date+'</span></div>'
+    +'<div class="section-body">'
+    +(hasMorning?'<div style="font-size:13px;color:#6366f1;margin-bottom:10px;padding:8px 10px;background:#f5f3ff;border-radius:8px">行程已自動帶入，勾選完成項目</div>':'<div style="font-size:13px;color:#f59e0b;margin-bottom:10px;padding:8px 10px;background:#fffbeb;border-radius:8px">⚠ 此日行程尚未儲存</div>')
+    +'<div id="comp-rows">'+(rows.length?rows.map(function(r,i){return compRowHTML(i,r)}).join(''):'<div class="empty">尚無項目</div>')+'</div>'
+    +'<div class="add-item-row" style="margin-top:10px"><select class="preset-select" id="comp-preset"><option value="">＋ 從清單補充...</option>'+allItems.map(function(x){return'<option value="'+esc(x)+'">'+esc(x)+'</option>'}).join('')+'</select><button class="btn btn-outline btn-sm" onclick="addCompItem()">新增</button></div>'
+    +'<div class="add-item-row"><input type="text" id="comp-manual" placeholder="手動輸入補充項目..." style="flex:1"><button class="btn btn-outline btn-sm" onclick="manualAddComp()">新增</button></div>'
+    +'<button class="btn btn-success btn-block" onclick="saveEvening()">儲存完成回報</button>'
+    +'</div></div>';
+}
+function compRowHTML(i,r){
+  var mb=!r.done?'<button onclick="moveToTodo('+i+')" style="background:none;border:1px solid #fed7aa;border-radius:6px;cursor:pointer;color:#c2410c;font-size:11px;padding:2px 7px;white-space:nowrap;flex-shrink:0">移至待辦</button>':'';
+  return'<div class="comp-item"><div class="chk'+(r.done?' done':'')+'" onclick="toggleComp('+i+')" style="margin-top:2px">'+(r.done?'✓':'')+'</div><div style="flex:1"><div class="comp-label'+(r.done?' done':'')+'">'+esc(r.label)+'</div><input class="comp-note" type="text" placeholder="備註（選填）" value="'+esc(r.note||'')+'" oninput="updCompNote('+i+',this.value)"></div><div style="display:flex;flex-direction:column;gap:4px;align-items:flex-end;flex-shrink:0">'+mb+'<button class="sch-del" onclick="delCompItem('+i+')">×</button></div></div>';
+}
+function syncCompNotes(){
+  var w=$id('comp-rows');if(!w)return;
+  var rows=getCompRows(S.cur,SEL_DATE);
+  var ns=w.querySelectorAll('.comp-note');
+  for(var i=0;i<ns.length;i++)if(rows[i])rows[i].note=ns[i].value;
+}
+function toggleComp(i){syncCompNotes();var r=getCompRows(S.cur,SEL_DATE);r[i].done=!r[i].done;refreshCompRows()}
+function delCompItem(i){syncCompNotes();getCompRows(S.cur,SEL_DATE).splice(i,1);refreshCompRows()}
+function updCompNote(i,v){var r=getCompRows(S.cur,SEL_DATE);if(r[i])r[i].note=v}
+function addCompItem(){var sel=$id('comp-preset');var v=sel&&sel.value;if(!v)return;syncCompNotes();getCompRows(S.cur,SEL_DATE).push({label:v,note:'',done:false});if(sel)sel.value='';refreshCompRows()}
+function manualAddComp(){var inp=$id('comp-manual');var v=inp&&inp.value.trim();if(!v)return;syncCompNotes();getCompRows(S.cur,SEL_DATE).push({label:v,note:'',done:false});inp.value='';refreshCompRows()}
+function refreshCompRows(){
+  var w=$id('comp-rows');if(!w)return;
+  var rows=getCompRows(S.cur,SEL_DATE);
+  w.innerHTML=rows.length?rows.map(function(r,i){return compRowHTML(i,r)}).join(''):'<div class="empty">尚無項目</div>';
+}
+function moveToTodo(i){
+  syncCompNotes();var rows=getCompRows(S.cur,SEL_DATE);var row=rows[i];if(!row)return;
+  var d=ud(S.cur);
+  // add to fixedTasks instead of assigned tasks
+  d.fixedTasks.push({label:row.label,count:row.note||''});
+  rows.splice(i,1);refreshCompRows();save();toast('已移至工作事項 ✓');
+}
+function saveEvening(){
+  syncCompNotes();var u=S.cur,date=SEL_DATE,rows=getCompRows(u,date);
+  if(!rows.length){toast('尚無項目');return}
+  ud(u).completions[date]=rows.map(function(r){return{label:r.label,note:r.note,done:r.done}});
+  save();toast('完成回報已儲存 ✓');
+  if(CUR_TAB===4)renderTab(4);
+}
+
+// ── KPI ──────────────────────────────────────────────────
+function renderKPISection(u,date,d){
+  var defs=kpiDefs(u);
+  if(!defs.length)return'<div class="section" style="margin-top:12px"><div class="section-header"><span class="section-title">KPI填報</span></div><div class="section-body"><div class="empty">此職能無KPI追蹤項目</div></div></div>';
+  var tKpi=(d.kpi&&d.kpi[date])||{};
+  var items=defs.map(function(k){
+    var val=tKpi[k.id]!==undefined?tKpi[k.id]:'';
+    var mT=mTarget(k),pct=val!==''?Math.min(Math.round((parseFloat(val)/mT)*100),150):0;
+    var fc=pct>=100?'good':pct>=70?'good':'warn';
+    var recent=getLast5(d.kpi||{},k.id);
+    var pLabel=k.period==='yearly'?'年目標 '+k.target+k.unit+'（月均 '+mT+'）':'月目標 '+k.target+k.unit;
+    return'<div class="kpi-item"><div style="display:flex;justify-content:space-between;align-items:center;margin-bottom:5px"><div><span class="kpi-cat">'+k.cat+'</span><span style="font-size:14px;font-weight:500;color:#333">'+k.name+'</span></div><span style="font-size:11px;color:#aaa">'+pLabel+'</span></div>'
+      +'<div style="display:flex;align-items:center;gap:8px"><input type="number" id="kpi_'+k.id+'" value="'+val+'" placeholder="今日數字" min="0" step="1" style="flex:1;padding:7px 10px;font-size:14px"><span style="font-size:13px;color:#888">'+k.unit+'</span></div>'
+      +(val!==''?'<div class="kpi-bar"><div class="kpi-fill '+fc+'" style="width:'+Math.min(pct,100)+'%"></div></div><div style="font-size:11px;color:#999;margin-top:2px">月目標 '+pct+'%</div>':'')
+      +(recent?'<div style="font-size:12px;color:#bbb;margin-top:3px">近5日：'+recent+'</div>':'')
+      +'</div>';
+  }).join('');
+  return'<div class="section" style="margin-top:12px"><div class="section-header"><span class="section-title">KPI填報</span><span class="badge badge-purple">'+date+'</span></div><div class="section-body">'+items+'<button class="btn btn-primary btn-block" onclick="saveKPI()">儲存KPI</button></div></div>';
+}
+function getLast5(kd,kid){var v=[];Object.keys(kd).sort().reverse().slice(0,5).forEach(function(d){if(kd[d]&&kd[d][kid]!==undefined)v.push(kd[d][kid])});return v.join(' → ')}
+function saveKPI(){
+  var u=S.cur,date=SEL_DATE,d=ud(u);
+  if(!d.kpi)d.kpi={};if(!d.kpi[date])d.kpi[date]={};
+  var defs=kpiDefs(u);
+  defs.forEach(function(k){var el=$id('kpi_'+k.id);if(el&&el.value!=='')d.kpi[date][k.id]=parseFloat(el.value)});
+  save();toast('KPI已儲存 ✓');renderTab(2);
+}
+
+// ── TODOS ─────────────────────────────────────────────────
+function renderTodos(u,myTasks,d){
+  var fixed=d.fixedTasks||[];
+  return'<div class="section" style="margin-top:12px">'
+    +'<div class="section-header"><span class="section-title">工作事項</span><span class="badge badge-gray">'+MEMBER_ROLES[u]+'</span></div>'
+    +'<div class="section-body">'
+    +'<div style="display:grid;grid-template-columns:1fr 80px 32px;gap:6px;margin-bottom:4px"><span style="font-size:12px;color:#aaa">項目</span><span style="font-size:12px;color:#aaa;text-align:center">次數/組數</span><span></span></div>'
+    +'<div id="fixed-list">'+renderFixedList(u,fixed)+'</div>'
+    +'<div style="display:grid;grid-template-columns:1fr 80px auto;gap:6px;margin-top:8px;align-items:center"><input type="text" id="new-fixed-label" placeholder="新增工作事項"><input type="text" id="new-fixed-count" placeholder="次數" style="text-align:center"><button class="btn btn-outline btn-sm" onclick="addFixed()">新增</button></div>'
+    +'</div></div>'
+    +'<div class="section" style="margin-top:12px"><div class="section-header"><span class="section-title">指派任務</span></div><div class="section-body">'+renderUserTasks(u,myTasks)+'</div></div>';
+}
+function renderFixedList(u,fixed){
+  if(!fixed.length)return'<div class="empty" style="padding:10px 0">尚無工作事項</div>';
+  return fixed.map(function(f,i){
+    var lbl=typeof f==='string'?f:f.label,cnt=typeof f==='string'?'':f.count||'';
+    return'<div style="display:grid;grid-template-columns:1fr 80px 32px;gap:6px;padding:5px 0;border-bottom:1px solid #f5f5f5;align-items:center">'
+      +'<input type="text" value="'+esc(lbl)+'" onchange="editFixedLabel('+i+',this.value)" style="padding:5px 8px;font-size:13px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa">'
+      +'<input type="text" value="'+esc(cnt)+'" onchange="editFixedCount('+i+',this.value)" placeholder="—" style="padding:5px 8px;font-size:13px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa;text-align:center">'
+      +'<button class="sch-del" onclick="delFixed('+i+')">×</button></div>';
+  }).join('');
+}
+function addFixed(){var li=$id('new-fixed-label'),ci=$id('new-fixed-count');var lbl=li&&li.value.trim();if(!lbl)return;ud(S.cur).fixedTasks.push({label:lbl,count:ci?ci.value.trim():''});if(li)li.value='';if(ci)ci.value='';$id('fixed-list').innerHTML=renderFixedList(S.cur,ud(S.cur).fixedTasks);refreshChips();save();toast('已新增')}
+function editFixedLabel(i,v){var f=ud(S.cur).fixedTasks;if(f[i])f[i].label=v;refreshChips();save()}
+function editFixedCount(i,v){var f=ud(S.cur).fixedTasks;if(f[i])f[i].count=v;save()}
+function delFixed(i){ud(S.cur).fixedTasks.splice(i,1);$id('fixed-list').innerHTML=renderFixedList(S.cur,ud(S.cur).fixedTasks);refreshChips();save()}
+
+function renderUserTasks(u,myTasks){
+  if(!myTasks.length)return'<div class="empty">目前沒有指派任務</div>';
+  var f=(window._TF&&window._TF[u])||'active';
+  var cnt={active:0,done:0,pending:0};
+  myTasks.forEach(function(t){var s=getTaskStatus(t);cnt[s]=(cnt[s]||0)+1});
+  var fil=myTasks.filter(function(t){return getTaskStatus(t)===f}).sort(function(a,b){var p={high:0,med:1,low:2};return(p[a.priority]-p[b.priority])||((a.deadline&&b.deadline)?new Date(a.deadline)-new Date(b.deadline):0)});
+  return'<div class="status-seg">'
+    +'<button class="seg-btn'+(f==='active'?' active':'')+'" onclick="setTF(\''+u+'\',\'active\')">進行中 '+(cnt.active||0)+'</button>'
+    +'<button class="seg-btn s-pending'+(f==='pending'?' active':'')+'" onclick="setTF(\''+u+'\',\'pending\')">Pending '+(cnt.pending||0)+'</button>'
+    +'<button class="seg-btn s-done'+(f==='done'?' active':'')+'" onclick="setTF(\''+u+'\',\'done\')">已完成 '+(cnt.done||0)+'</button>'
+    +'</div>'+(fil.length?fil.map(function(t){return uTaskCard(u,t)}).join(''):'<div class="empty">此分類無任務</div>');
+}
+function setTF(u,f){if(!window._TF)window._TF={};window._TF[u]=f;renderTab(3)}
+function uTaskCard(u,t){
+  var st=getTaskStatus(t),subs=t.subtasks||[];
+  var dc=0;subs.forEach(function(s){if(s.done)dc++});
+  var pct=subs.length?Math.round(dc/subs.length*100):0;
+  var pb={high:'badge-red',med:'badge-yellow',low:'badge-green'}[t.priority];
+  var pl={high:'高',med:'中',low:'低'}[t.priority];
+  var dl=t.deadline?daysUntil(t.deadline):null;
+  var dlT='',dlS='';
+  if(t.deadline&&st!=='done'){dlT=t.deadline;if(dl<=0){dlS='color:#dc2626;font-weight:500';dlT='今日到期！'}else if(dl===1){dlS='color:#dc2626;font-weight:500';dlT='明天到期'}else if(dl<=3){dlS='color:#854d0e';dlT=dl+'天後'}}
+  var sb=st==='pending'?'priority-pending':t.priority==='high'?'priority-high':t.priority==='med'?'priority-med':'priority-low';
+  var memberDoneBadge=t.member_done&&st!=='done'?'<span style="font-size:11px;background:#e6f4ea;color:#1e7e34;padding:1px 7px;border-radius:6px;font-weight:500">待確認完成</span>':'';
+  return'<div class="task-card '+sb+'">'
+    +'<div class="task-card-header" onclick="toggleExp(\'tc-'+t.id+'\')">'
+    +'<div class="task-title-wrap"><div class="task-title'+(st==='done'?' done':st==='pending'?' pending':'')+'">'+esc(t.title)+(st==='pending'?' <span style="font-size:11px;background:#fff7ed;color:#c2410c;padding:1px 6px;border-radius:6px">Pending</span>':'')+'</div>'
+    +(t.content?'<div style="font-size:13px;color:#888;margin-top:2px">'+esc(t.content)+'</div>':'')
+    +'<div class="task-meta"><span class="badge '+pb+'">'+pl+'優先</span>'+(t.deadline&&dlT?'<span style="font-size:12px;'+dlS+'">'+dlT+'</span>':'')+(subs.length?'<span style="font-size:12px;color:#888">'+dc+'/'+subs.length+'</span>':'')+memberDoneBadge+'</div>'
+    +(subs.length?'<div class="progress-bar"><div class="progress-fill'+(pct===100?' full':'')+'" style="width:'+pct+'%"></div></div>':'')
+    +'</div><span style="font-size:16px;color:#ccc;flex-shrink:0">›</span></div>'
+    +'<div id="tc-'+t.id+'" style="display:none"><div class="task-subtasks">'
+    +(subs.length?subs.map(function(s,i){return'<div class="subtask-row"><div class="chk'+(s.done?' done':'')+'" onclick="toggleSub(\''+u+'\',\''+t.id+'\','+i+')" style="width:18px;height:18px;font-size:11px;flex-shrink:0">'+(s.done?'✓':'')+'</div><span class="subtask-label'+(s.done?' done':'')+'">'+esc(s.title)+'</span></div>'}).join(''):'<div style="font-size:13px;color:#bbb;padding:6px 0">尚無子任務</div>')
+    +'</div></div></div>';
+}
+function toggleExp(id){var el=$id(id);if(el)el.style.display=el.style.display==='none'?'block':'none'}
+function toggleSub(u,tid,idx){
+  var t=null;for(var i=0;i<tasks().length;i++)if(tasks()[i].id===tid){t=tasks()[i];break}
+  if(!t||!t.subtasks)return;
+  t.subtasks[idx].done=!t.subtasks[idx].done;
+  // check if all subtasks done → mark member_done but keep status active
+  var allDone=true;for(var i=0;i<t.subtasks.length;i++)if(!t.subtasks[i].done){allDone=false;break}
+  if(allDone){
+    t.member_done=true;
+    // do NOT change t.status — keep as active, pending manager confirmation
+  } else {
+    t.member_done=false;
+  }
+  save();renderTab(3);
+}
+
+// ── HISTORY ──────────────────────────────────────────────
+function renderHistory(u,d){
+  var ds={};
+  Object.keys(d.schedules||{}).forEach(function(k){ds[k]=1});
+  Object.keys(d.completions||{}).forEach(function(k){ds[k]=1});
+  Object.keys(d.kpi||{}).forEach(function(k){ds[k]=1});
+  var dates=Object.keys(ds).sort().reverse().slice(0,30);
+  if(!dates.length)return'<div style="margin:12px"><div class="empty">尚無歷史紀錄</div></div>';
+  return dates.map(function(date){
+    var mor=d.schedules[date],comp=d.completions[date],kpiE=d.kpi&&d.kpi[date];
+    var mH=mor&&mor.length?'<div style="font-size:12px;color:#aaa;margin-bottom:4px">行程</div>'+mor.map(function(r){return'<div style="font-size:13px;color:#555;padding:2px 0">• '+esc(r.label)+(r.note?'<span style="color:#bbb"> — '+esc(r.note)+'</span>':'')+'</div>'}).join(''):'';
+    var cH=comp&&comp.length?'<div style="font-size:12px;color:#aaa;margin:8px 0 4px">完成回報</div>'+comp.map(function(r){return'<div style="font-size:13px;padding:2px 0;color:'+(r.done?'#16a34a':'#aaa')+'">'+(r.done?'✓':'○')+' '+esc(r.label)+(r.note?'<span style="color:#bbb"> — '+esc(r.note)+'</span>':'')+'</div>'}).join(''):'';
+    var kH='';
+    if(kpiE&&Object.keys(kpiE).length){
+      var defs=kpiDefs(u);
+      kH='<div style="font-size:12px;color:#aaa;margin:8px 0 4px">KPI</div><div style="display:flex;flex-wrap:wrap;gap:6px">';
+      Object.keys(kpiE).forEach(function(kid){
+        var def=null;for(var i=0;i<defs.length;i++)if(defs[i].id===kid){def=defs[i];break}
+        if(def)kH+='<span style="background:#f3f4f6;font-size:13px;padding:2px 8px;border-radius:6px">'+def.name+'：'+kpiE[kid]+def.unit+'</span>';
+      });
+      kH+='</div>';
+    }
+    if(!mH&&!cH&&!kH)return'';
+    return'<div class="section" style="margin:12px 12px 0"><div class="section-header"><span class="section-title">'+date+'</span><button class="btn btn-outline btn-sm" onclick="goBackfill(\''+date+'\')">補填</button></div><div class="section-body">'+mH+cH+kH+'</div></div>';
+  }).filter(Boolean).join('');
+}
+function goBackfill(date){
+  SEL_DATE=date;
+  clearDateCache(S.cur,date);
+  var dp=$id('date-picker');if(dp)dp.value=date;
+  onDateChange(date);
+  swTab(0);
+}
+
+// ── MANAGER ──────────────────────────────────────────────
+function renderMgr(app){
+  var td=today();
+  app.innerHTML=''
+    +'<header><div class="logo">經理控制台</div><div class="header-right"><button class="btn btn-outline btn-sm" onclick="exitMgr()">離開</button></div></header>'
+    +'<div class="mgr-tabs">'
+    +'<button class="mgr-tab active" id="mt0" onclick="swMgrTab(0)">總覽</button>'
+    +'<button class="mgr-tab" id="mt1" onclick="swMgrTab(1)">任務管理</button>'
+    +'<button class="mgr-tab" id="mt2" onclick="swMgrTab(2)">行程查看</button>'
+    +'<button class="mgr-tab" id="mt3" onclick="swMgrTab(3)">工作事項</button>'
+    +'<button class="mgr-tab" id="mt4" onclick="swMgrTab(4)">KPI設定</button>'
+    +'<button class="mgr-tab" id="mt5" onclick="swMgrTab(5)">匯出</button>'
+    +'</div>'
+    +'<div id="mgr-panel"></div>';
+  swMgrTab(0);
+}
+function swMgrTab(i){
+  for(var j=0;j<6;j++){var b=$id('mt'+j);if(b)b.className='mgr-tab'+(i===j?' active':'')}
+  var p=$id('mgr-panel');if(!p)return;
+  var td=today();
+  if(i===0)p.innerHTML=renderMgrOverview(td);
+  else if(i===1)p.innerHTML=renderMgrTasks();
+  else if(i===2)p.innerHTML=renderMgrSchPanel();
+  else if(i===3)p.innerHTML=renderMgrFixedPanel();
+  else if(i===4)p.innerHTML=renderMgrKpiPanel();
+  else if(i===5)p.innerHTML=renderMgrExport(td);
+}
+function exitMgr(){S.isMgr=false;render()}
+
+function renderMgrOverview(td){
+  var cnt={active:0,done:0,pending:0};
+  tasks().forEach(function(t){var s=getTaskStatus(t);cnt[s]=(cnt[s]||0)+1});
+  var urg=tasks().filter(function(t){return getTaskStatus(t)==='active'&&t.deadline&&daysUntil(t.deadline)<=3});
+  var pendingConfirm=tasks().filter(function(t){return t.member_done&&getTaskStatus(t)==='active'});
+  return'<div style="padding:12px 12px 0">'
+    +'<div class="stat-row">'
+    +'<div class="stat"><div class="stat-num">'+(cnt.active||0)+'</div><div class="stat-label">進行中</div></div>'
+    +'<div class="stat"><div class="stat-num" style="color:#ea580c">'+(cnt.pending||0)+'</div><div class="stat-label">Pending</div></div>'
+    +'<div class="stat"><div class="stat-num" style="color:#16a34a">'+(cnt.done||0)+'</div><div class="stat-label">已完成</div></div>'
+    +'<div class="stat"><div class="stat-num" style="color:'+(urg.length?'#dc2626':'#4f46e5')+'">'+urg.length+'</div><div class="stat-label">即將到期</div></div>'
+    +'</div>'
+    +(pendingConfirm.length?'<div class="alert-banner" style="background:#e6f4ea;border-color:#86efac;color:#166534">✓ 待確認完成：'+pendingConfirm.map(function(t){return esc(t.title)+'（'+t.assignees.join('、')+'）'}).join('、')+'</div>':'')
+    +urg.map(function(t){return'<div class="alert-banner'+(daysUntil(t.deadline)<=1?' urgent':'')+'">⚠ '+esc(t.title)+'｜'+t.assignees.join('、')+'｜'+(daysUntil(t.deadline)<=0?'今日到期':'剩'+daysUntil(t.deadline)+'天')+'</div>'}).join('')
+    +'</div>'
+    +'<div class="section"><div class="section-header"><span class="section-title">今日出勤紀錄</span><span class="badge badge-blue">'+td+'</span></div><div class="section-body">'
+    +MEMBERS.map(function(m){var d=ud(m);return'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5"><div>'+m+' <span style="font-size:12px;color:#999">'+MEMBER_ROLES[m]+'</span></div><div style="display:flex;gap:5px;flex-wrap:wrap">'
+      +'<span class="badge '+(d.schedules[td]&&d.schedules[td].length?'badge-blue':'badge-gray')+'">'+(d.schedules[td]&&d.schedules[td].length?'行程✓':'未登錄')+'</span>'
+      +'<span class="badge '+(d.completions[td]&&d.completions[td].length?'badge-green':'badge-gray')+'">'+(d.completions[td]&&d.completions[td].length?'回報✓':'待回報')+'</span>'
+      +'<span class="badge '+(d.kpi&&d.kpi[td]?'badge-purple':'badge-gray')+'">'+(d.kpi&&d.kpi[td]?'KPI✓':'KPI待')+'</span>'
+      +'</div></div>'}).join('')
+    +'</div></div>';
+}
+
+function renderMgrTasks(){
+  var f=window._MTF||'active';
+  var cnt={active:0,done:0,pending:0};
+  tasks().forEach(function(t){var s=getTaskStatus(t);cnt[s]=(cnt[s]||0)+1});
+  var fil=tasks().filter(function(t){return getTaskStatus(t)===f});
+  return'<div style="padding:12px">'
+    +'<div class="status-seg">'
+    +'<button class="seg-btn'+(f==='active'?' active':'')+'" onclick="setMTF(\'active\')">進行中 '+(cnt.active||0)+'</button>'
+    +'<button class="seg-btn s-pending'+(f==='pending'?' active':'')+'" onclick="setMTF(\'pending\')">Pending '+(cnt.pending||0)+'</button>'
+    +'<button class="seg-btn s-done'+(f==='done'?' active':'')+'" onclick="setMTF(\'done\')">已完成 '+(cnt.done||0)+'</button>'
+    +'</div><div>'+(fil.length?fil.map(function(t){return mgrTaskCard(t)}).join(''):'<div class="empty">此分類無任務</div>')+'</div></div>'
+    +'<div class="section" style="margin:0 12px"><div class="section-header"><span class="section-title">新增指派任務</span></div><div class="section-body">'
+    +'<label>任務標題</label><input type="text" id="tt" placeholder="例：準備Q3業績報告">'
+    +'<label>任務內容</label><textarea id="tc" rows="2" placeholder="詳細說明..."></textarea>'
+    +'<div class="input-row"><div><label>截止日期</label><input type="date" id="td2" value="'+today()+'"></div><div><label>優先級</label><select id="tpri"><option value="high">高</option><option value="med" selected>中</option><option value="low">低</option></select></div></div>'
+    +'<label>子任務（一行一項）</label><textarea id="tsubs" rows="3" placeholder="準備簡報&#10;聯絡客戶&#10;送出報告"></textarea>'
+    +'<label>指派對象</label><div style="display:flex;flex-wrap:wrap;gap:10px;margin-top:6px">'+MEMBERS.map(function(m){return'<label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#555;margin-top:0"><input type="checkbox" class="assign-cb" value="'+m+'" style="width:auto"> '+m+'</label>'}).join('')+'</div>'
+    +'<button class="btn btn-primary btn-block" onclick="addTask()">新增任務</button>'
+    +'</div></div>';
+}
+function setMTF(f){window._MTF=f;swMgrTab(1)}
+function mgrTaskCard(t){
+  var st=getTaskStatus(t),subs=t.subtasks||[];
+  var dc=0;subs.forEach(function(s){if(s.done)dc++});
+  var pct=subs.length?Math.round(dc/subs.length*100):0;
+  var pb={high:'badge-red',med:'badge-yellow',low:'badge-green'}[t.priority];
+  var pl={high:'高',med:'中',low:'低'}[t.priority];
+  var sb=st==='pending'?'priority-pending':t.priority==='high'?'priority-high':t.priority==='med'?'priority-med':'priority-low';
+  var memberDoneBadge=t.member_done&&st!=='done'?'<span style="font-size:11px;background:#e6f4ea;color:#166534;padding:1px 7px;border-radius:6px;font-weight:500">組員已完成・待確認</span>':'';
+  return'<div class="task-card '+sb+(t.member_done&&st!=='done'?' '+sb+'" style="box-shadow:0 0 0 2px #86efac':'')+'">'
+    +'<div class="task-card-header" onclick="toggleExp(\'mc-'+t.id+'\')">'
+    +'<div class="task-title-wrap"><div class="task-title'+(st==='done'?' done':st==='pending'?' pending':'')+'">'+esc(t.title)+'</div>'
+    +(t.content?'<div style="font-size:13px;color:#888;margin-top:2px">'+esc(t.content)+'</div>':'')
+    +'<div class="task-meta"><span class="badge '+pb+'">'+pl+'優先</span>'+(t.deadline?'<span style="font-size:12px;color:#888">'+t.deadline+'</span>':'')+'<span style="font-size:12px;color:#888">'+t.assignees.join('、')+'</span>'+(subs.length?'<span style="font-size:12px;color:#888">'+dc+'/'+subs.length+'</span>':'')+memberDoneBadge+'<span class="badge '+(st==='done'?'badge-green':st==='pending'?'badge-orange':'badge-blue')+'">'+(st==='done'?'已完成':st==='pending'?'Pending':'進行中')+'</span></div>'
+    +(subs.length?'<div class="progress-bar"><div class="progress-fill'+(pct===100?' full':'')+'" style="width:'+pct+'%"></div></div>':'')
+    +'</div><span style="font-size:16px;color:#ccc;flex-shrink:0">›</span></div>'
+    +'<div id="mc-'+t.id+'" style="display:none"><div class="task-subtasks">'
+    +subs.map(function(s,i){return'<div class="subtask-row"><div class="chk'+(s.done?' done':'')+'" style="width:18px;height:18px;font-size:11px;flex-shrink:0">'+(s.done?'✓':'')+'</div><span class="subtask-label'+(s.done?' done':'')+'">'+esc(s.title)+'</span><button class="sch-del" onclick="mgrDelSub(\''+t.id+'\','+i+')">×</button></div>'}).join('')
+    +'<div class="add-item-row" style="margin-top:6px"><input type="text" id="ns-'+t.id+'" placeholder="新增子任務" style="flex:1;padding:6px 10px;font-size:13px"><button class="btn btn-outline btn-sm" onclick="mgrAddSub(\''+t.id+'\')">新增</button></div>'
+    +'<div style="margin-top:10px"><div style="display:flex;gap:8px;align-items:center;margin-bottom:8px"><span style="font-size:13px;color:#888;white-space:nowrap">截止日期</span><input type="date" id="dl-'+t.id+'" value="'+(t.deadline||'')+'" style="flex:1;padding:6px 10px;font-size:13px"></div>'
+    +'<div style="display:flex;gap:8px"><select id="st-'+t.id+'" style="flex:1;font-size:13px;padding:6px 8px"><option value="active"'+(st==='active'?' selected':'')+'>進行中</option><option value="pending"'+(st==='pending'?' selected':'')+'>Pending</option><option value="done"'+(st==='done'?' selected':'')+'>已完成</option></select>'
+    +'<button class="btn btn-primary btn-sm" onclick="mgrUpdateTask(\''+t.id+'\')">更新</button><button class="btn btn-danger btn-sm" onclick="mgrDelTask(\''+t.id+'\')">刪除</button></div></div>'
+    +'</div></div></div>';
+}
+function mgrAddSub(tid){var inp=$id('ns-'+tid);var v=inp&&inp.value.trim();if(!v)return;var t=null;for(var i=0;i<tasks().length;i++)if(tasks()[i].id===tid){t=tasks()[i];break}if(!t)return;if(!t.subtasks)t.subtasks=[];t.subtasks.push({title:v,done:false});save();inp.value='';swMgrTab(1);toast('子任務已新增')}
+function mgrDelSub(tid,i){var t=null;for(var j=0;j<tasks().length;j++)if(tasks()[j].id===tid){t=tasks()[j];break}if(!t||!t.subtasks)return;t.subtasks.splice(i,1);save();swMgrTab(1)}
+function mgrUpdateTask(tid){
+  var t=null;for(var i=0;i<tasks().length;i++)if(tasks()[i].id===tid){t=tasks()[i];break}if(!t)return;
+  var sel=$id('st-'+tid),dl=$id('dl-'+tid);
+  if(sel)t.status=sel.value;if(dl)t.deadline=dl.value;
+  // clear member_done flag when manager explicitly sets status
+  t.member_done=false;
+  if(t.status==='done'&&t.subtasks)t.subtasks.forEach(function(s){s.done=true});
+  if(t.status==='active'&&t.subtasks)t.subtasks.forEach(function(s){s.done=false});
+  save();swMgrTab(1);toast('已更新');
+}
+function mgrDelTask(id){if(!confirm('確定刪除此任務？'))return;S.d._t=tasks().filter(function(t){return t.id!==id});save();swMgrTab(1);toast('已刪除')}
+function addTask(){
+  var title=$id('tt')&&$id('tt').value.trim();if(!title){toast('請輸入任務標題');return}
+  var cbs=document.querySelectorAll('.assign-cb:checked');var assignees=[];for(var i=0;i<cbs.length;i++)assignees.push(cbs[i].value);
+  if(!assignees.length){toast('請選擇指派對象');return}
+  var subsEl=$id('tsubs');var subsRaw=subsEl?subsEl.value.trim():'';
+  var subtasks=subsRaw?subsRaw.split('\n').map(function(s){return{title:s.trim(),done:false}}).filter(function(s){return s.title}):[];
+  if(!S.d._t)S.d._t=[];
+  S.d._t.push({id:'t'+Date.now(),title:title,content:$id('tc')&&$id('tc').value.trim()||'',deadline:$id('td2')&&$id('td2').value||'',priority:$id('tpri')&&$id('tpri').value||'med',assignees:assignees,subtasks:subtasks,status:'active',createdAt:today()});
+  save();toast('任務已新增 ✓');swMgrTab(1);
+}
+
+function renderMgrSchPanel(){
+  return'<div class="section" style="margin-top:12px"><div class="section-header"><span class="section-title">各組員今日行程</span></div><div class="section-body"><div class="member-tabs">'+MEMBERS.map(function(m,i){return'<button class="mtab'+(i===0?' active':'')+'" onclick="swM(\''+m+'\',this,\'ms-sch\')">'+m+'</button>'}).join('')+'</div><div id="ms-sch">'+mgrSchOf(MEMBERS[0])+'</div></div></div>'
+    +'<div class="section" style="margin-top:12px"><div class="section-header"><span class="section-title">各組員KPI數據</span></div><div class="section-body"><div class="member-tabs">'+MEMBERS.map(function(m,i){return'<button class="mtab'+(i===0?' active':'')+'" onclick="swM(\''+m+'\',this,\'ms-kpi\')">'+m+'</button>'}).join('')+'</div><div id="ms-kpi">'+mgrKpiOf(MEMBERS[0])+'</div></div></div>';
+}
+function mgrSchOf(u){
+  var td=today(),d=ud(u);var mor=d.schedules[td];var comp=d.completions[td];
+  if(!mor||!mor.length)return'<div class="empty">今日尚未登錄行程</div>';
+  return'<div style="font-size:12px;color:#aaa;margin-bottom:6px">行程</div>'
+    +mor.map(function(r){return'<div style="font-size:14px;padding:3px 0;color:#333">• '+esc(r.label)+(r.note?'<span style="color:#bbb;font-size:13px"> — '+esc(r.note)+'</span>':'')+'</div>'}).join('')
+    +(comp&&comp.length?'<div class="divider"></div><div style="font-size:12px;color:#aaa;margin-bottom:6px">完成回報</div>'+comp.map(function(r){return'<div style="font-size:14px;padding:3px 0;color:'+(r.done?'#16a34a':'#aaa')+'">'+(r.done?'✓':'○')+' '+esc(r.label)+(r.note?'<span style="color:#bbb;font-size:13px"> — '+esc(r.note)+'</span>':'')+'</div>'}).join(''):'');
+}
+function mgrKpiOf(u){
+  var defs=kpiDefs(u);var d=ud(u),td=today();
+  if(!defs.length)return'<div class="empty">此職能無KPI追蹤項目</div>';
+  var tK=(d.kpi&&d.kpi[td])||{};
+  return defs.map(function(k){
+    var val=tK[k.id]!==undefined?tK[k.id]:'—';var mT=mTarget(k);
+    var pct=val!=='—'?Math.min(Math.round((parseFloat(val)/mT)*100),150):null;
+    var fc=pct!==null?(pct>=100?'good':'warn'):'warn';
+    return'<div style="display:flex;align-items:center;justify-content:space-between;padding:8px 0;border-bottom:1px solid #f5f5f5"><div><span class="kpi-cat">'+k.cat+'</span><span style="font-size:13px;color:#444">'+k.name+'</span></div><div style="text-align:right;min-width:80px"><span style="font-size:15px;font-weight:500;color:'+(val==='—'?'#ccc':'#333')+'">'+val+(val!=='—'?' '+k.unit:'')+'</span>'+(pct!==null?'<div class="kpi-bar" style="width:70px;margin-top:2px"><div class="kpi-fill '+fc+'" style="width:'+Math.min(pct,100)+'%"></div></div>':'')+'</div></div>';
+  }).join('');
+}
+
+function renderMgrFixedPanel(){
+  return'<div class="section" style="margin-top:12px"><div class="section-header"><span class="section-title">管理工作事項清單</span></div><div class="section-body"><div class="member-tabs">'+MEMBERS.map(function(m,i){return'<button class="mtab'+(i===0?' active':'')+'" onclick="swM(\''+m+'\',this,\'ms-fix\')">'+m+'</button>'}).join('')+'</div><div id="ms-fix">'+mgrFixOf(MEMBERS[0])+'</div></div></div>';
+}
+function mgrFixOf(u){
+  var fixed=ud(u).fixedTasks||[];
+  var rows=fixed.map(function(f,i){
+    var lbl=typeof f==='string'?f:f.label,cnt=typeof f==='string'?'':f.count||'';
+    return'<div style="display:grid;grid-template-columns:1fr 80px 32px;gap:6px;padding:5px 0;border-bottom:1px solid #f5f5f5;align-items:center"><input type="text" value="'+esc(lbl)+'" onchange="mgrEditFL(\''+u+'\','+i+',this.value)" style="padding:5px 8px;font-size:13px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa"><input type="text" value="'+esc(cnt)+'" onchange="mgrEditFC(\''+u+'\','+i+',this.value)" placeholder="—" style="padding:5px 8px;font-size:13px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa;text-align:center"><button class="sch-del" onclick="mgrDelF(\''+u+'\','+i+')">×</button></div>';
+  }).join('')||'<div class="empty" style="padding:8px 0">尚無工作事項</div>';
+  return'<div style="display:grid;grid-template-columns:1fr 80px 32px;gap:6px;margin-bottom:4px"><span style="font-size:11px;color:#aaa">項目</span><span style="font-size:11px;color:#aaa;text-align:center">次數/組數</span><span></span></div>'+rows
+    +'<div style="display:grid;grid-template-columns:1fr 80px auto;gap:6px;margin-top:8px;align-items:center"><input type="text" id="mfi-l-'+u+'" placeholder="新增工作事項"><input type="text" id="mfi-c-'+u+'" placeholder="次數" style="text-align:center"><button class="btn btn-outline btn-sm" onclick="mgrAddF(\''+u+'\')">新增</button></div>';
+}
+function mgrEditFL(u,i,v){var f=ud(u).fixedTasks;if(f[i])f[i].label=v;save()}
+function mgrEditFC(u,i,v){var f=ud(u).fixedTasks;if(f[i])f[i].count=v;save()}
+function mgrDelF(u,i){ud(u).fixedTasks.splice(i,1);save();$id('ms-fix').innerHTML=mgrFixOf(u)}
+function mgrAddF(u){var li=$id('mfi-l-'+u),ci=$id('mfi-c-'+u);var lbl=li&&li.value.trim();if(!lbl)return;ud(u).fixedTasks.push({label:lbl,count:ci?ci.value.trim():''});if(li)li.value='';if(ci)ci.value='';$id('ms-fix').innerHTML=mgrFixOf(u);save();toast('已新增至 '+u)}
+
+function renderMgrKpiPanel(){
+  return'<div class="section" style="margin-top:12px"><div class="section-header"><span class="section-title">KPI項目管理</span><span class="badge badge-purple">僅經理可編輯</span></div><div class="section-body"><div class="member-tabs">'+MEMBERS.map(function(m,i){return'<button class="mtab'+(i===0?' active':'')+'" onclick="swM(\''+m+'\',this,\'ms-kpie\')">'+m+'</button>'}).join('')+'</div><div id="ms-kpie">'+mgrKpiEdit(MEMBERS[0])+'</div></div></div>';
+}
+function mgrKpiEdit(u){
+  var defs=kpiDefs(u);
+  var rows=defs.map(function(k,i){
+    return'<div style="display:grid;grid-template-columns:55px 1fr 65px 45px 70px 30px;gap:5px;padding:6px 0;border-bottom:1px solid #f5f5f5;align-items:center">'
+      +'<input type="text" value="'+esc(k.cat)+'" onchange="editKpiField(\''+u+'\','+i+',\'cat\',this.value)" style="padding:4px 6px;font-size:12px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa;text-align:center">'
+      +'<input type="text" value="'+esc(k.name)+'" onchange="editKpiField(\''+u+'\','+i+',\'name\',this.value)" style="padding:4px 8px;font-size:13px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa">'
+      +'<input type="number" value="'+k.target+'" onchange="editKpiField(\''+u+'\','+i+',\'target\',parseFloat(this.value))" style="padding:4px 6px;font-size:13px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa;text-align:center" min="0">'
+      +'<input type="text" value="'+esc(k.unit)+'" onchange="editKpiField(\''+u+'\','+i+',\'unit\',this.value)" style="padding:4px 6px;font-size:13px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa;text-align:center">'
+      +'<select onchange="editKpiField(\''+u+'\','+i+',\'period\',this.value)" style="padding:4px 6px;font-size:12px;border:1px solid #e0e0e0;border-radius:6px;background:#fafafa"><option value="monthly"'+((k.period||'monthly')==='monthly'?' selected':'')+'>月目標</option><option value="yearly"'+(k.period==='yearly'?' selected':'')+'>年目標</option></select>'
+      +'<button class="sch-del" onclick="delKpiItem(\''+u+'\','+i+')">×</button></div>';
+  }).join('');
+  return'<div style="display:grid;grid-template-columns:55px 1fr 65px 45px 70px 30px;gap:5px;margin-bottom:4px"><span style="font-size:11px;color:#aaa;text-align:center">類別</span><span style="font-size:11px;color:#aaa">名稱</span><span style="font-size:11px;color:#aaa;text-align:center">目標</span><span style="font-size:11px;color:#aaa;text-align:center">單位</span><span style="font-size:11px;color:#aaa;text-align:center">週期</span><span></span></div>'
+    +(rows||'<div class="empty" style="padding:10px 0">尚無KPI項目</div>')
+    +'<div style="display:grid;grid-template-columns:55px 1fr 65px 45px 70px auto;gap:5px;margin-top:10px;align-items:center">'
+    +'<input type="text" id="nkc-'+u+'" placeholder="類別" style="padding:6px;font-size:12px;text-align:center">'
+    +'<input type="text" id="nkn-'+u+'" placeholder="指標名稱">'
+    +'<input type="number" id="nkt-'+u+'" placeholder="目標" style="padding:6px;font-size:13px;text-align:center" min="0">'
+    +'<input type="text" id="nku-'+u+'" placeholder="單位" style="padding:6px;font-size:13px;text-align:center">'
+    +'<select id="nkp-'+u+'" style="padding:6px;font-size:12px;border:1px solid #ddd;border-radius:8px"><option value="monthly">月目標</option><option value="yearly">年目標</option></select>'
+    +'<button class="btn btn-primary btn-sm" onclick="addKpiItem(\''+u+'\')">新增</button></div>'
+    +'<div style="font-size:12px;color:#888;margin-top:8px;padding:6px 10px;background:#fafafa;border-radius:8px">年目標會自動換算為月均值</div>';
+}
+function editKpiField(u,i,field,val){
+  if(!S.d._kpi)S.d._kpi={};
+  if(!S.d._kpi[u])S.d._kpi[u]=kpiDefs(u).map(function(k){return JSON.parse(JSON.stringify(k))});
+  S.d._kpi[u][i][field]=val;save();
+}
+function delKpiItem(u,i){
+  if(!S.d._kpi)S.d._kpi={};
+  if(!S.d._kpi[u])S.d._kpi[u]=kpiDefs(u).map(function(k){return JSON.parse(JSON.stringify(k))});
+  S.d._kpi[u].splice(i,1);save();$id('ms-kpie').innerHTML=mgrKpiEdit(u);toast('已刪除');
+}
+function addKpiItem(u){
+  var cat=$id('nkc-'+u),name=$id('nkn-'+u),target=$id('nkt-'+u),unit=$id('nku-'+u),period=$id('nkp-'+u);
+  var n=name&&name.value.trim();if(!n){toast('請輸入指標名稱');return}
+  if(!S.d._kpi)S.d._kpi={};
+  if(!S.d._kpi[u])S.d._kpi[u]=kpiDefs(u).map(function(k){return JSON.parse(JSON.stringify(k))});
+  S.d._kpi[u].push({id:'k'+Date.now(),cat:cat&&cat.value.trim()||'量化',name:n,unit:unit&&unit.value.trim()||'',target:target?parseFloat(target.value)||0:0,period:period&&period.value||'monthly'});
+  save();$id('ms-kpie').innerHTML=mgrKpiEdit(u);toast('KPI已新增');
+}
+
+function swM(m,el,tid){
+  var par=el.closest('.section-body');if(!par)return;
+  var tabs=par.querySelectorAll('.mtab');for(var i=0;i<tabs.length;i++)tabs[i].classList.remove('active');
+  el.classList.add('active');
+  var det=$id(tid);if(!det)return;
+  if(tid==='ms-kpi')det.innerHTML=mgrKpiOf(m);
+  else if(tid==='ms-sch')det.innerHTML=mgrSchOf(m);
+  else if(tid==='ms-fix')det.innerHTML=mgrFixOf(m);
+  else if(tid==='ms-kpie')det.innerHTML=mgrKpiEdit(m);
+}
+
+function renderMgrExport(td){
+  var fd=new Date();fd.setDate(1);
+  return'<div class="section" style="margin-top:12px"><div class="section-header"><span class="section-title">匯出Excel報表</span></div><div class="section-body">'
+    +'<div class="input-row"><div><label>開始日期</label><input type="date" id="exp-from" value="'+fd.toISOString().split('T')[0]+'"></div><div><label>結束日期</label><input type="date" id="exp-to" value="'+td+'"></div></div>'
+    +'<label>選擇組員</label><div class="member-check-grid"><label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#555;margin-top:0"><input type="checkbox" id="exp-all" onchange="document.querySelectorAll(\'.exp-member\').forEach(function(c){c.checked=this.checked},this)" style="width:auto" checked> 全選</label>'+MEMBERS.map(function(m){return'<label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#555;margin-top:0"><input type="checkbox" class="exp-member" value="'+m+'" style="width:auto" checked> '+m+'</label>'}).join('')+'</div>'
+    +'<div class="export-row"><button class="btn btn-teal" onclick="doExport(\'all\')">每人一個分頁</button><button class="btn btn-outline" onclick="doExport(\'combined\')">所有人合一表</button></div>'
+    +'</div></div>';
+}
+function getDatesInRange(from,to){var d=[],c=new Date(from),e=new Date(to);while(c<=e){d.push(c.toISOString().split('T')[0]);c.setDate(c.getDate()+1)}return d}
+function doExport(mode){
+  var from=$id('exp-from')&&$id('exp-from').value,to=$id('exp-to')&&$id('exp-to').value;
+  if(!from||!to||from>to){toast('請確認日期範圍');return}
+  var exms=document.querySelectorAll('.exp-member:checked');
+  var members=[];for(var i=0;i<exms.length;i++)members.push(exms[i].value);
+  if(!members.length){toast('請選擇至少一位組員');return}
+  var dates=getDatesInRange(from,to);
+  var wb=XLSX.utils.book_new();
+  function mRows(m){
+    var d=ud(m);
+    return dates.map(function(date){
+      var mor=d.schedules[date]||[],comp=d.completions[date]||[],kpiE=d.kpi&&d.kpi[date]||{};
+      var mT=mor.map(function(r){return r.label+(r.note?'（'+r.note+'）':'')}).join('；');
+      var cD=comp.filter(function(r){return r.done}).map(function(r){return r.label+(r.note?'（'+r.note+'）':'')}).join('；');
+      var cP=comp.filter(function(r){return!r.done}).map(function(r){return r.label+(r.note?'（'+r.note+'）':'')}).join('；');
+      var defs=kpiDefs(m);
+      var kP=defs.map(function(k){return kpiE[k.id]!==undefined?k.name+'：'+kpiE[k.id]+k.unit:''}).filter(Boolean).join('；');
+      if(!mT&&!cD&&!cP&&!kP)return null;
+      return{日期:date,姓名:m,職能:MEMBER_ROLES[m],早上行程:mT,完成項目:cD,未完成項目:cP,KPI數據:kP};
+    }).filter(Boolean);
+  }
+  if(mode==='all'){
+    members.forEach(function(m){
+      var rows=mRows(m);
+      if(!rows.length)rows.push({日期:'（無紀錄）',姓名:m,職能:MEMBER_ROLES[m],早上行程:'',完成項目:'',未完成項目:'',KPI數據:''});
+      var ws=XLSX.utils.json_to_sheet(rows);ws['!cols']=[12,8,14,40,40,30,30].map(function(w){return{wch:w}});
+      XLSX.utils.book_append_sheet(wb,ws,m);
+    });
+  } else {
+    var all=[];members.forEach(function(m){all=all.concat(mRows(m))});
+    all.sort(function(a,b){return a['日期']>b['日期']?1:-1});
+    if(!all.length)all.push({日期:'（無紀錄）',姓名:'',職能:'',早上行程:'',完成項目:'',未完成項目:'',KPI數據:''});
+    var ws=XLSX.utils.json_to_sheet(all);ws['!cols']=[12,8,14,40,40,30,30].map(function(w){return{wch:w}});
+    XLSX.utils.book_append_sheet(wb,ws,'行程總覽');
+  }
+  var tRows=tasks().filter(function(t){return t.assignees.some(function(a){return members.indexOf(a)>=0})}).map(function(t){return{任務標題:t.title,內容:t.content||'',截止日期:t.deadline||'',優先級:{high:'高',med:'中',low:'低'}[t.priority],狀態:{active:'進行中',done:'已完成',pending:'Pending'}[getTaskStatus(t)]||'進行中',子任務:(t.subtasks||[]).map(function(s){return(s.done?'✓':'○')+s.title}).join('；'),指派對象:t.assignees.join('、'),建立日期:t.createdAt||''}});
+  if(tRows.length){var tws=XLSX.utils.json_to_sheet(tRows);tws['!cols']=[25,40,12,8,10,50,20,12].map(function(w){return{wch:w}});XLSX.utils.book_append_sheet(wb,tws,'指派任務')}
+  XLSX.writeFile(wb,'行程報告_'+from+'_'+to+'.xlsx');toast('Excel已下載 ✓');
+}
+
+render();
+</script>
+</body>
+</html>
