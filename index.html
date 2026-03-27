@@ -131,9 +131,11 @@ label:first-child{margin-top:0}
 <div id="toast" class="toast"></div>
 <script>
 var MEMBERS=['Juno','Luna','Lucia','Ian','Ana','Heather'];
-var MEMBER_ROLES={Juno:'業務',Luna:'業務助理',Lucia:'學術專員兼B2B',Ian:'業務兼B2B',Ana:'個管師兼行銷',Heather:'臨床試驗兼個管'};
-var DEFAULT_SCH_ITEMS={Juno:['醫師拜訪','客戶電話回訪','新客戶開發','報價單整理','CRM資料更新','訂單追蹤','業績報表','業務會議'],Luna:['檢測流程確認','報告寄送','訂單處理','客戶詢價回覆','物料庫存盤點','會議記錄','廠商聯絡'],Lucia:['醫師/科室拜訪','學術文獻提供','演講/研討會安排','拜訪紀錄更新','B2B里程碑確認','客戶滿意度追蹤'],Ian:['客戶拜訪（業務）','B2B里程碑確認','藥廠關係維護','期中/結案報告','跨部門協作'],Ana:['活動籌備執行','活動出席率確認','行銷素材提供','官網平台推進','兒癌個管行政','病人案例整理'],Heather:['IRB送件確認','收案進度更新','EDC填寫確認','試驗文件建檔','病友活動協調','個管個案追蹤']};
-var DEFAULT_FIXED={Juno:['拜訪客戶/回訪電話','更新客戶資料與CRM','整理報價單與合約','追蹤訂單與出貨進度'],Luna:['處理檢測流程相關作業','確認報告寄送完整性','回覆客戶詢價與報價','管理樣品與宣傳物料'],Lucia:['拜訪醫師/醫院科室','提供學術資訊與文獻','確認B2B專案里程碑','維護客戶關係'],Ian:['業務拜訪（50%工時）','藥廠關係維護','撰寫期中/結案報告','跨部門協作'],Ana:['個管活動籌備與執行','追蹤活動出席率','提供行銷部素材','推進官網購物平台'],Heather:['確認IRB申請時程','更新收案進度','確認EDC填寫完整','維護試驗文件建檔']};
+var ALL_MEMBERS=['Juno','Luna','Lucia','Ian','Ana','Heather','Jessie'];
+var MEMBER_ROLES={Juno:'業務',Luna:'業務助理',Lucia:'學術專員兼B2B',Ian:'業務兼B2B',Ana:'個管師兼行銷',Heather:'臨床試驗兼個管',Jessie:'臨床部經理'};
+var MGR_NAME='Jessie';
+var DEFAULT_SCH_ITEMS={Juno:['醫師拜訪','客戶電話回訪','新客戶開發','報價單整理','CRM資料更新','訂單追蹤','業績報表','業務會議'],Luna:['檢測流程確認','報告寄送','訂單處理','客戶詢價回覆','物料庫存盤點','會議記錄','廠商聯絡'],Lucia:['醫師/科室拜訪','學術文獻提供','演講/研討會安排','拜訪紀錄更新','B2B里程碑確認','客戶滿意度追蹤'],Ian:['客戶拜訪（業務）','B2B里程碑確認','藥廠關係維護','期中/結案報告','跨部門協作'],Ana:['活動籌備執行','活動出席率確認','行銷素材提供','官網平台推進','兒癌個管行政','病人案例整理'],Heather:['IRB送件確認','收案進度更新','EDC填寫確認','試驗文件建檔','病友活動協調','個管個案追蹤'],Jessie:['團隊會議','進度確認','策略規劃','跨部門協作','報告審閱','人員輔導']};
+var DEFAULT_FIXED={Juno:['拜訪客戶/回訪電話','更新客戶資料與CRM','整理報價單與合約','追蹤訂單與出貨進度'],Luna:['處理檢測流程相關作業','確認報告寄送完整性','回覆客戶詢價與報價','管理樣品與宣傳物料'],Lucia:['拜訪醫師/醫院科室','提供學術資訊與文獻','確認B2B專案里程碑','維護客戶關係'],Ian:['業務拜訪（50%工時）','藥廠關係維護','撰寫期中/結案報告','跨部門協作'],Ana:['個管活動籌備與執行','追蹤活動出席率','提供行銷部素材','推進官網購物平台'],Heather:['確認IRB申請時程','更新收案進度','確認EDC填寫完整','維護試驗文件建檔'],Jessie:['主持/出席團隊會議','確認各組員進度','審閱報告與文件','跨部門溝通協調']};
 var KPI_DEFS_DEFAULT={Juno:[{id:'j1',cat:'量化',name:'每日拜訪數',unit:'次',target:50,period:'monthly'},{id:'j2',cat:'量化',name:'新客戶開發數',unit:'家',target:5,period:'monthly'}],Luna:[],Lucia:[],Ian:[{id:'i1',cat:'業務',name:'每日拜訪數',unit:'次',target:20,period:'monthly'}],Ana:[{id:'a1',cat:'個管',name:'提供行銷部素材病人數',unit:'人',target:5,period:'monthly'},{id:'a2',cat:'個管',name:'提供Lucia素材病人數',unit:'人',target:8,period:'monthly'}],Heather:[{id:'h1',cat:'個管',name:'提供行銷部素材病人數',unit:'人',target:3,period:'monthly'},{id:'h2',cat:'個管',name:'提供Lucia素材病人數',unit:'人',target:4,period:'monthly'}]};
 
 var APPS_SCRIPT_URL='https://script.google.com/macros/s/AKfycbyyWQ7FwhbOmGrrIORAvWlXavteOBw93FHxgV7Lkh9Yba1sCZs52zZZtsjY_1LoZNjFBQ/exec';
@@ -597,31 +599,55 @@ function goBackfill(date){
 }
 
 // ── MANAGER ──────────────────────────────────────────────
+var MGR_TAB=0;
 function renderMgr(app){
   var td=today();
   app.innerHTML=''
-    +'<header><div class="logo">經理控制台</div><div class="header-right"><button class="btn btn-outline btn-sm" onclick="exitMgr()">離開</button></div></header>'
+    +'<header><div class="logo">經理控制台</div><div class="header-right"><span class="user-badge">'+MGR_NAME+'</span><button class="btn btn-outline btn-sm" onclick="exitMgr()">離開</button></div></header>'
     +'<div class="mgr-tabs">'
     +'<button class="mgr-tab active" id="mt0" onclick="swMgrTab(0)">總覽</button>'
-    +'<button class="mgr-tab" id="mt1" onclick="swMgrTab(1)">任務管理</button>'
-    +'<button class="mgr-tab" id="mt2" onclick="swMgrTab(2)">行程查看</button>'
-    +'<button class="mgr-tab" id="mt3" onclick="swMgrTab(3)">工作事項</button>'
-    +'<button class="mgr-tab" id="mt4" onclick="swMgrTab(4)">KPI設定</button>'
-    +'<button class="mgr-tab" id="mt5" onclick="swMgrTab(5)">匯出</button>'
+    +'<button class="mgr-tab" id="mt1" onclick="swMgrTab(1)">我的行程</button>'
+    +'<button class="mgr-tab" id="mt2" onclick="swMgrTab(2)">任務管理</button>'
+    +'<button class="mgr-tab" id="mt3" onclick="swMgrTab(3)">行程查看</button>'
+    +'<button class="mgr-tab" id="mt4" onclick="swMgrTab(4)">工作事項</button>'
+    +'<button class="mgr-tab" id="mt5" onclick="swMgrTab(5)">KPI設定</button>'
+    +'<button class="mgr-tab" id="mt6" onclick="swMgrTab(6)">匯出</button>'
     +'</div>'
     +'<div id="mgr-panel"></div>';
   swMgrTab(0);
 }
 function swMgrTab(i){
-  for(var j=0;j<6;j++){var b=$id('mt'+j);if(b)b.className='mgr-tab'+(i===j?' active':'')}
+  MGR_TAB=i;
+  for(var j=0;j<7;j++){var b=$id('mt'+j);if(b)b.className='mgr-tab'+(i===j?' active':'')}
   var p=$id('mgr-panel');if(!p)return;
   var td=today();
   if(i===0)p.innerHTML=renderMgrOverview(td);
-  else if(i===1)p.innerHTML=renderMgrTasks();
-  else if(i===2)p.innerHTML=renderMgrSchPanel();
-  else if(i===3)p.innerHTML=renderMgrFixedPanel();
-  else if(i===4)p.innerHTML=renderMgrKpiPanel();
-  else if(i===5)p.innerHTML=renderMgrExport(td);
+  else if(i===1){S.cur=MGR_NAME;SEL_DATE=today();clearDateCache(MGR_NAME,SEL_DATE);CUR_TAB=0;p.innerHTML='<div id="mgr-my-sch"><div class="date-bar"><label style="font-size:13px;color:#888;margin:0;white-space:nowrap">日期</label><input type="date" id="mgr-date-picker" value="'+SEL_DATE+'" onchange="mgrDateChange(this.value)"></div><div id="mgr-my-panel"></div></div>';renderMgrMyTab(0);}
+  else if(i===2)p.innerHTML=renderMgrTasks();
+  else if(i===3)p.innerHTML=renderMgrSchPanel();
+  else if(i===4)p.innerHTML=renderMgrFixedPanel();
+  else if(i===5)p.innerHTML=renderMgrKpiPanel();
+  else if(i===6)p.innerHTML=renderMgrExport(td);
+}
+function mgrDateChange(val){SEL_DATE=val;clearDateCache(MGR_NAME,val);renderMgrMyTab(0);}
+function renderMgrMyTab(i){
+  var p=$id('mgr-my-panel');if(!p)return;
+  var tabBar='<div class="tab-bar">'
+    +'<button class="tab'+(i===0?' active':'')+'" onclick="renderMgrMyTab(0)">早上行程</button>'
+    +'<button class="tab'+(i===1?' active':'')+'" onclick="renderMgrMyTab(1)">完成回報</button>'
+    +'<button class="tab'+(i===2?' active':'')+'" onclick="renderMgrMyTab(2)">KPI</button>'
+    +'<button class="tab'+(i===3?' active':'')+'" onclick="renderMgrMyTab(3)">工作事項</button>'
+    +'<button class="tab'+(i===4?' active':'')+'" onclick="renderMgrMyTab(4)">歷史紀錄</button>'
+    +'</div>';
+  var d=ud(MGR_NAME);
+  var myTasks=tasks().filter(function(t){return t.assignees&&t.assignees.indexOf(MGR_NAME)>=0});
+  var content='';
+  if(i===0)content=renderMorningSection(MGR_NAME,SEL_DATE);
+  else if(i===1)content=renderEveningSection(MGR_NAME,SEL_DATE);
+  else if(i===2)content=renderKPISection(MGR_NAME,SEL_DATE,d);
+  else if(i===3)content=renderTodos(MGR_NAME,myTasks,d);
+  else if(i===4)content=renderHistory(MGR_NAME,d);
+  p.innerHTML=tabBar+content;
 }
 function exitMgr(){S.isMgr=false;render()}
 
@@ -816,7 +842,7 @@ function renderMgrExport(td){
   var fd=new Date();fd.setDate(1);
   return'<div class="section" style="margin-top:12px"><div class="section-header"><span class="section-title">匯出Excel報表</span></div><div class="section-body">'
     +'<div class="input-row"><div><label>開始日期</label><input type="date" id="exp-from" value="'+fd.toISOString().split('T')[0]+'"></div><div><label>結束日期</label><input type="date" id="exp-to" value="'+td+'"></div></div>'
-    +'<label>選擇組員</label><div class="member-check-grid"><label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#555;margin-top:0"><input type="checkbox" id="exp-all" onchange="document.querySelectorAll(\'.exp-member\').forEach(function(c){c.checked=this.checked},this)" style="width:auto" checked> 全選</label>'+MEMBERS.map(function(m){return'<label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#555;margin-top:0"><input type="checkbox" class="exp-member" value="'+m+'" style="width:auto" checked> '+m+'</label>'}).join('')+'</div>'
+    +'<label>選擇人員</label><div class="member-check-grid"><label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#555;margin-top:0"><input type="checkbox" id="exp-all" onchange="document.querySelectorAll(\'.exp-member\').forEach(function(c){c.checked=this.checked},this)" style="width:auto" checked> 全選</label>'+ALL_MEMBERS.map(function(m){return'<label style="display:flex;align-items:center;gap:4px;font-size:13px;color:#555;margin-top:0"><input type="checkbox" class="exp-member" value="'+m+'" style="width:auto" checked> '+m+(m===MGR_NAME?' ★':'')+'</label>'}).join('')+'</div>'
     +'<div class="export-row"><button class="btn btn-teal" onclick="doExport(\'all\')">每人一個分頁</button><button class="btn btn-outline" onclick="doExport(\'combined\')">所有人合一表</button></div>'
     +'</div></div>';
 }
